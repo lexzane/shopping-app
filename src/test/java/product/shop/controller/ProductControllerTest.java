@@ -1,5 +1,6 @@
 package product.shop.controller;
 
+import java.util.Collections;
 import java.util.List;
 import io.restassured.http.ContentType;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
@@ -17,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import product.shop.dto.ProductRequestDto;
 import product.shop.model.Product;
 import product.shop.service.ProductService;
-
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -86,7 +86,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProduct() {
+    public void saveProduct() {
         Product product = new Product("Shampoo", "Hair care");
         Mockito.when(productService.save(product))
                 .thenReturn(new Product(5L, "Shampoo", "Hair care"));
@@ -104,7 +104,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProductWithNullName() {
+    public void saveProductWithNullName() {
         Product product = new Product(null, "Hair care");
         Mockito.when(productService.save(product))
                 .thenReturn(new Product(5L, product.getName(), product.getDescription()));
@@ -119,7 +119,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProductWithNullDescription() {
+    public void saveProductWithNullDescription() {
         Product product = new Product("Lotion", null);
         Mockito.when(productService.save(product))
                 .thenReturn(new Product(5L, product.getName(), product.getDescription()));
@@ -134,7 +134,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProductWithBlankName() {
+    public void saveProductWithBlankName() {
         Product product = new Product(" ", "Hair care");
         Mockito.when(productService.save(product))
                 .thenReturn(new Product(5L, product.getName(), product.getDescription()));
@@ -149,7 +149,7 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProductWithBlankDescription() {
+    public void saveProductWithBlankDescription() {
         Product product = new Product("Lotion", " ");
         Mockito.when(productService.save(product))
                 .thenReturn(new Product(5L, product.getName(), product.getDescription()));
@@ -164,24 +164,71 @@ class ProductControllerTest {
     }
 
     @Test
-    public void createProductWithNameMoreThan100Symbols() {
-        Product productWithNotValidName = new Product("1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1234567890"
-                + "1", "Some description");
-        Mockito.when(productService.save(productWithNotValidName))
-                .thenReturn(new Product(5L, productWithNotValidName.getName(), productWithNotValidName.getDescription()));
+    public void saveProductWithNameHasMaxLength() {
+        String validName = String.join("", Collections.nCopies(100, "a"));
+        Product productWithNameOfMaxSize = new Product(validName, "Some description");
+        Mockito.when(productService.save(productWithNameOfMaxSize))
+                .thenReturn(new Product(5L, productWithNameOfMaxSize.getName(),
+                        productWithNameOfMaxSize.getDescription()));
 
         RestAssuredMockMvc.given()
                 .contentType(ContentType.JSON)
-                .body(new ProductRequestDto(productWithNotValidName.getName(), productWithNotValidName.getDescription()))
+                .body(new ProductRequestDto(productWithNameOfMaxSize.getName(),
+                        productWithNameOfMaxSize.getDescription()))
+                .when()
+                .post("/shop/products")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void saveProductWithNameAboveMaxLength() {
+        String notValidName = String.join("", Collections.nCopies(101, "a"));
+        Product productWithNameAboveMaxSize = new Product(notValidName, "Some description");
+        Mockito.when(productService.save(productWithNameAboveMaxSize))
+                .thenReturn(new Product(5L, productWithNameAboveMaxSize.getName(),
+                        productWithNameAboveMaxSize.getDescription()));
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(new ProductRequestDto(productWithNameAboveMaxSize.getName(),
+                        productWithNameAboveMaxSize.getDescription()))
+                .when()
+                .post("/shop/products")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void createProductWithDescriptionHasMaxLength() {
+        String validDescription = String.join("", Collections.nCopies(1000, "a"));
+        Product productWithDescriptionOfMaxSize = new Product("Some name", validDescription);
+        Mockito.when(productService.save(productWithDescriptionOfMaxSize))
+                .thenReturn(new Product(5L, productWithDescriptionOfMaxSize.getName(),
+                        productWithDescriptionOfMaxSize.getDescription()));
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(new ProductRequestDto(productWithDescriptionOfMaxSize.getName(),
+                        productWithDescriptionOfMaxSize.getDescription()))
+                .when()
+                .post("/shop/products")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void createProductWithDescriptionAboveMaxLength() {
+        String notValidDescription = String.join("", Collections.nCopies(1001, "a"));
+        Product productWithDescriptionAboveMaxSize = new Product("Some name", notValidDescription);
+        Mockito.when(productService.save(productWithDescriptionAboveMaxSize))
+                .thenReturn(new Product(5L, productWithDescriptionAboveMaxSize.getName(),
+                        productWithDescriptionAboveMaxSize.getDescription()));
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(new ProductRequestDto(productWithDescriptionAboveMaxSize.getName(),
+                        productWithDescriptionAboveMaxSize.getDescription()))
                 .when()
                 .post("/shop/products")
                 .then()
